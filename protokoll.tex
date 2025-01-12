@@ -10,6 +10,7 @@
 
 \documentclass[12pt, a4paper, titlepage, oneside]{scrartcl}
 \newcommand{\lang}{de}
+\newcommand{\pilcrow}{\textparagraph}
 \usepackage{esseProtocol}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,10 +137,29 @@
 	\\ Anschließend verriet mir der Bot (wenn auch nur ungern) den Code. \\ Das
 	vollständige Gespräch befindet sich in Listing~\ref*{code:secret} auf Seite~\pageref*{code:secret}.
 
+	
 	\section{C\"asars Schl\"usselbund}
 
 	\subsection{Schl\"ussel. Knacken.}
-	Nicht gelöst.
+	In der Aufgabe Schlüssel. Knacken. geht es um einen 4 stelligen PIN der gefunden werden muss um einen Key Verwenden zu können. Der Key ist uns bekannt allerdings ist dieser etwas beschädigt. Als erstes ist mir aufgefallen, dass der Key nicht richtig endet, da an Stelle von -----END RSA PRIVATE KEY-----eine nicht base64 konforme Zeichenfolge steht. Das gleiche gilt für das letzte Zeichen der vorletzten Zeile des Keys.
+
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.75\textwidth]{imgs/Cäsars Schlüsslbund/Falsche Zeichen.png}
+		\caption{Ende des Keys}
+	\end{figure}
+
+	Ich habe zum lösen der Aufgabe nun folgeden annahmen getroffen:
+
+	\begin{itemize}
+		\item Die Zeichenfolge in der letzten Zeile gehört ersätzt durch -----END RSA PRIVATE KEY----- und ist nicht teil des Key Körpers. Es handelt sich hier um die Fußzeile des Keys. Diese Anname wurde andhand der ersten 3 Zeichen der Zeile getroffen.
+		\item Der Key ist bis auf das letzte Zeichen vollständig und ist ein valieder Key sobald ¶ durch den korrekten base64 char ersetzt worden ist. 
+		\item Wäre der Key in tackt, könnte ein Brute-Force Angriff jeden möglichen PIN im bereich 0000 bis 9999 austesten und so den richtigen PIN ermitteln.
+	\end{itemize}
+
+	Um diese Annahmen zu testen schrieb ich ein Skript welches die letzte Zeile ausbessert, statt dem Zeichen ¶ jedes im base64 Format enthaltene Zeichen im Key nach einander einsetzt und schließlich für jedes mögliche eingesetzte Zeichen alle 10000 PIN Kombinationen testet. Das Skript war erfolgreich und fand dass der char 8 mit dem PIN 8264 erfolgreich den Key entschlüsselt. Aus Lesbarkeits Gründen wurde der Key String gekürzt und das Absatzzeichen wurde mit einem = Zeichen ausgetauscht, da LaTeX dies nicht erkannt hat. Das Skript \ref{code:schluesselknacken} ist im Anhang auf Seite \pageref{code:schluesselknacken} zu finden.
+
+
 
 	\subsection{Passw\"orter Retten.}
 	Nicht gelöst.
@@ -1190,6 +1210,9 @@
 
     \subsection{AND(roid)ERSBruteforce.py (AND(roid)ERS)}
     \lstinputlisting[caption=AND(roid)ERSBruteforce.py,label=code:android,style=simple]{files/AND(roid)ERSBruteforce.py}
+
+	\subsection{skriptSchlüsselKnacken.py (Schlüssel. Knacken.)}
+	\lstinputlisting[caption=skriptSchluesselKnacken.py,label=code:schluesselknacken,style=simple]{files/skriptSchluesselKnacken.py}
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%
