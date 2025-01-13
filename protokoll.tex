@@ -157,7 +157,7 @@
 		\item Wäre der Key intakt, könnte ein Brute-Force Angriff jeden möglichen PIN im bereich 0000 bis 9999 austesten und so den richtigen PIN ermitteln.
 	\end{itemize}
 
-	Um diese Annahmen zu testen schrieb ich ein Skript welches die letzte Zeile ausbessert, statt dem Zeichen ¶ jedes im base64 Format enthaltene Zeichen im Key nach einander einsetzt und schließlich für jedes mögliche eingesetzte Zeichen alle 10000 PIN Kombinationen testet. Das Skript war erfolgreich und fand dass der char 8 mit dem PIN 8264 erfolgreich den Key entschlüsselt. Aus Gründen der Lesbarkeit wurde der Key String gekürzt und das Absatzzeichen wurde mit einem = Zeichen ausgetauscht, da LaTeX dies nicht erkannt hat. Das Skript \ref{code:schluesselknacken} ist im Anhang auf Seite \pageref{code:schluesselknacken} zu finden.
+	Um diese Annahmen zu testen schrieb ich ein Skript welches die letzte Zeile ausbessert, statt dem Zeichen ¶ jedes im base64 Format enthaltene Zeichen im Key nach einander einsetzt und schließlich für jedes mögliche eingesetzte Zeichen alle 10000 PIN Kombinationen testet. Das Skript war erfolgreich und fand dass der char 8 mit dem PIN 8264 erfolgreich den Key entschlüsselt. Aus Gründen der Lesbarkeit wurde der Key String gekürzt und das Absatzzeichen wurde mit einem = Zeichen ausgetauscht, da LaTeX dies nicht erkannt hat. Das Skript ist in Listing~\ref*{code:schluesselknacken} auf Seite~\pageref*{code:schluesselknacken} zu finden.
 
 
 
@@ -485,13 +485,82 @@
 	\section{Wikinger Overflow}
 
 	\subsection{\"Uberlauf. Hand drauf.}
-	Nicht gelöst.
+	Der Befehl \\
+	\lstinline{ssh -L 9000:10.10.10.201:80 -p 12345 e[Matrikelnr.]@tese.esse-teaching.at} \\
+	erlaubt uns im Browser unter \\
+	\lstinline{http://localhost:9000/team44/ueberlauf.zip} \\
+	die Angabe herunterzuladen. Sie besteht aus dem Programm „server“ und einer geleakten alten
+	Version des Programmes:
+	\begin{figure}[h!]
+		\centering
+		\fbox{
+		\includegraphics[width=0.7\textwidth]{imgs/server_leaked.png}
+		}
+		\caption{relevanter Teil des geleakten Server Codes}
+		\label{fig:uhd}
+	\end{figure}
+	\\
+	Wenn wir das Programm „server”, welches ein einfacher Portlistener ist, starten, hört es
+	standartmäßig Port 9999 ab. Man kann in einem zweiten Terminalfenster mit den folgenden
+	Befehlen das Werkzeug Netcat auf dem Port 9999 starten und so mit dem laufenden „server”
+	interagieren: \\
+	\lstinline{nc 127.0.0.1 9999 (Localhost)}\\
+	oder\\
+	\lstinline{nc [eigene IP-Adresse] 9999} \\
+	\\
+	Das Programm nimmt Strings der Form \lstinline{username:password} entgegen. Es wurde wie folgt
+	kompiliert: \\
+	\lstinline{gcc -o server server.c -fno-stack-protector -D_FORTIFY_SOURCE=0 -no-pie}\\
+	Die Flag „-fno-stack-protector" ist was uns erlaubt für einen Overflow zu sorgen und somit das
+	Programm glauben zu lassen, dass wir das richtige Passwort eingegeben haben. Die Funktion
+	„authenticate" kopiert den Username und das Passwort in zwei Character Arrays der Länge 10. Das
+	interne Passwort, womit unser Input Passwort verglichen wird, ist auch in einem Array der Länge
+	10. All diese Arrays werden direkt hintereinander initialisiert. Der Username und das Passwort
+	werden mit der Funktion \lstinline{strcpy()} in die Arrays kopiert. \lstinline{strcpy()} hat kein vordefiniertes Verhalten für
+	was geschehen soll, wenn der zu kopierende String länger ist als der Zielspeicher. Der Username
+	spielt bei der Überprüfung des Passwortes keine Rolle, da er nur für Grußformeln verwendet wird.
+	Das Einzige, was das Programm überprüft, ist ob das Input Passwort und das interne Passwort
+	gleich sind. Dies können wir ausnutzen. \\
+	\\
+	Mithilfe von print-Statements finden wir heraus, dass im Speicher zuerst der Username, dann das
+	Input Passwort und letztlich das interne Passwort gespeichert ist. Unser Ziel ist es, das interne
+	Passwort mit unserem zu überschreiben. Dies tun wir, indem wir bei der Eingabe des Usernames
+	den Speicherbereich des Usernames und des Input Passwortes mit einem Puffer auffüllen und dann
+	das, was wir als neues internes Passwort haben wollen, hinten dazu schreiben. Dann müssen wir nur
+	noch als Input Passwort das wählen, was wir nun in den Speicher des internen Passwortes
+	geschrieben haben. \\
+	Das Programm nimmt Eingaben der Form \lstinline{username:password}. Ein Input, der für einen Buffer-
+	Overflow sorgt und uns das Geheimnis verrät, wäre zum Beispiel:\\
+	„AAAAAAAAAAAAAAAAAAAATESTTEST:TESTTEST" \\
+	Die 20 „A" füllen den Speicherbereich des Usernames und Input Passwortes, weshalb TESTTEST
+	in den Speicherbereich des internen Speichers geschrieben wird. Danach wird noch der
+	Speicherbereich des Input Passwortes durch TESTTEST überschrieben, denn der strcpy() Aufruf für
+	das Passwort kommt nach dem für den Username. Man muss allerdings auch darauf achten, dass
+	man die Input Eingabe im Terminal nicht mit "Enter" beendet, da dies einen Zeilenumbruch an das
+	Ende der Eingabe hängt, sondern mit „Strg+D".
 
 	\subsection{Typisch Typing ... Stufe 1}
-	Nicht gelöst.
+	C weißt oft undefiniertes Verhalten auf. Im Programm „server” aus dem Beispiel „Überlauf. Hand
+	drauf.” werden die Eingaben des Usernamen und Passwortes mit der Funktion \lstinline{strcpy()} verarbeitet.
+	Diese Funktion hat kein vordefiniertes Verhalten für was passieren soll, wenn man etwas in einen
+	Speicherbereich hineinkommiert, was größer als der Bereich ist. Es wird dem/der Programmier/In
+	die Bürde überlassen, sich um Memory Safety zu kümmen. In dem Programm wurde sich nicht
+	darum gekümmert, weshalb wir für einen Buffer-Overflow sorgen konnte. \\
+	In Rust hingegen ist soetwas - zumindest im Safe-Mode - nicht erlaubt. Wenn man versuchen
+	würde, Speicher mit mehr zu befüllen als zulässig ist, würde ein „panic“ während der Laufzeit
+	ausgelöst werden. Weiters zwingt Rust einen mit Pattern Matching dazu alle Ausgangsfälle einer
+	Funktion abzudecken, beispielsweise durch die Einteilung in ‚Ok‘ und ‚Err‘, wodurch Fehler nicht
+	ignoriert werden können. \\
+	Mehr zu diesem Thema findet man in den Slides bzw. in der Transkription zum Thema
+	„Sicherheitsimplikationen von Typisierung in Programmiersprachen“
 
 	\subsection{Typisch Typing ... Stufe 2}
-	Nicht gelöst.
+	Die umgeschriebene Rust Version des C Programmes „server” befindet sich in Listing~\ref*{code:tts2} auf Seite~\pageref*{code:tts2} . \\
+	Anmerkungen: Damit das Programm nicht nicht in Panik verfällt mussten Bounds Checks
+	hinzugefügt werden. Dadurch wird garantiert, dass nur Inputs zwischen 1 und 10 akzeptiert werden.
+	Weiters werden Username und Password als Strings gespeichert im Gegensatz zum C Programm,
+	wo es Character Arrays sind. Es werden aber alle Buchstaben in Username und Password weiterhin
+	zu Großbuchstaben gemacht.
 
 	\subsection{Typisch Typing ... Stufe 3}
 	Nicht gelöst.
@@ -540,21 +609,44 @@
 	Nicht gelöst.
 
 	\section{Das. Beste. Text. Adventure. Aller. Zeiten.}
+	Vom Tese Server aus, kam ich mit dem Befehl \\
+	\lstinline{ssh -p 12244 eisec_team44@10.10.10.203} \\
+	und dem Teampasswort kommt man zum Textadventure.
 
 	\subsection{Time to travel!}
-	Nicht gelöst.
+	Wir starten im Jahr 2024. Bob der Mechaniker sagt und, dass der Energiestein der
+	Zeitsteuerungszentrale im Zeitstrang GJ1875 im Jahr 45BC verlorengegangen ist. „GJ1875“ ist die
+	Lösung von „Time to Travel!“.
 
 	\subsection{Mein Name?}
-	Nicht gelöst.
+	Bob gibt uns ein Handbuch und eine Schlüsselkarte, womit wir die Zeitmaschiene verwenden
+	können. Wir reisen nach 45BC. In der naheliegenden Stadt gibt es einen Tempel und mehrere
+	Marktplätze. Es gibt bei den Marktlätzen einen Kuriositätenladen. Der Ladenbesitzer heißt Daniel.
+	„Daniel“ ist die Lösung von „Mein Name?“.
 
 	\subsection{Ein PIN!}
-	Nicht gelöst.
+	Weil wir kein Geld haben, können wir im Laden nichts kaufen, aber Daniel schenkt und ein Buch,
+	welches keiner kaufen will. In dem Buch ist unter anderem von dem Caesar Chiffre die Rede. Wir
+	gehen zurück zum Tempel. Es wird hervorgehoben, dass es 16 Seulen hat. Dort ist eine Statue von
+	Caesar mit einer Inschrifft, die wir nicht entziffern können. Wir wenden den Caesar Chifre an und
+	verschieben jeden Buchstaben der Inschrift um 16 Stellen. Wir erhalten den Code „ZWEI ACHT
+	ACHT SIEBEN“. „2887“ ist die Lösung von „Ein PIN!“.
 
 	\subsection{Ach ... ein Schl\"ussel}
-	Nicht gelöst.
+	Im Tempel ist eine verschlossene Tür, die man mit einem PIN öffnen muss. Wir geben 2887 ein und
+	öffnen die Tür. Wir finden einen Beute and Geld und eine verschlossene Truhe. Wir gehen zurück
+	zu Daniel und kaufen einen Schlüssel. Auf dem Schlüssel ist 39036 eingraviert. „39036“ ist die
+	Lösung von „Ach … Ein Schlüssel“.
 
 	\subsection{Flag!}
-	Nicht gelöst.
+	Wir gehen wieder zurück zum Tempel und öffnen die Truhe. Es ist der Energiestein drinnen. Auf
+	dem Stein ist ein QR-Code eingraviert. Wenn man ihn scannt, erhält man \lstinline{aDFzdDByeV8=}. Wir
+	reisen zurück in das Jahr 2024 und geben Bob den Stein. Die Zeitsteuerungszentrale funktioniert
+	wieder und zeigt und einen weiteren QR-Code. Dieser gibt uns den String \lstinline{cmVzdDByM2Q=}.
+	Weiters haben wir von der Maschiene den Verifizierungscode 6095 erhalten. An den „=“ Zeichen
+	am Ende der Strings erkennt man, dass sie in Base64 kodiert sind. Wenn man sie dekodiert und
+	zusammenfügt, erhält man \lstinline{h1st0ry_rest0r3d}. Der String \lstinline{h1st0ry_rest0r3d_6095} ist die Lösung
+	von „Flag!“.
 
 	\section{Passwörter werden wir auch nie los, oder?!}
 
@@ -1205,14 +1297,18 @@
 	\subsection{Vollständiges Gespräch (I keep you my little secret)}
 	\lstinputlisting[caption=vollständiges Gespräch mit dem Bot,label=code:secret,style=simple]{files/IKeepYouMyLittleSecret.txt}
 
+	\subsection{skriptSchlüsselKnacken.py (Schlüssel. Knacken.)}
+	\lstinputlisting[caption=skriptSchluesselKnacken.py,label=code:schluesselknacken,style=simple]{files/skriptSchluesselKnacken.py}
+
 	\subsection{TimingBruteforce.py (Newton und Co KG)}
 	\lstinputlisting[caption=TimingBruteforce.py,label=code:newton,style=simple]{files/TimingBruteforce.py}
 
     \subsection{AND(roid)ERSBruteforce.py (AND(roid)ERS)}
     \lstinputlisting[caption=AND(roid)ERSBruteforce.py,label=code:android,style=simple]{files/AND(roid)ERSBruteforce.py}
 
-	\subsection{skriptSchlüsselKnacken.py (Schlüssel. Knacken.)}
-	\lstinputlisting[caption=skriptSchluesselKnacken.py,label=code:schluesselknacken,style=simple]{files/skriptSchluesselKnacken.py}
+	\subsection{main.rs (Typisch Typing ... Stufe 2)}
+	\lstinputlisting[caption=main.rs (Typisch Typing ... Stufe 2),label=code:tts2,style=simple]{files/main.rs}
+	
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%
