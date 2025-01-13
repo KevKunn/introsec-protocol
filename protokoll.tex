@@ -533,10 +533,10 @@
 	Overflow sorgt und uns das Geheimnis verrät, wäre zum Beispiel:\\
 	„AAAAAAAAAAAAAAAAAAAATESTTEST:TESTTEST" \\
 	Die 20 „A" füllen den Speicherbereich des Usernames und Input Passwortes, weshalb TESTTEST
-	in den Speicherbereich des internen Speichers geschrieben wird. Danach wird noch der
+	in den Speicherbereich des internen Passwortes geschrieben wird. Danach wird noch der
 	Speicherbereich des Input Passwortes durch TESTTEST überschrieben, denn der strcpy() Aufruf für
 	das Passwort kommt nach dem für den Username. Man muss allerdings auch darauf achten, dass
-	man die Input Eingabe im Terminal nicht mit "Enter" beendet, da dies einen Zeilenumbruch an das
+	man die Input Eingabe im Terminal nicht mit „Enter" beendet, da dies einen Zeilenumbruch an das
 	Ende der Eingabe hängt, sondern mit „Strg+D".
 
 	\subsection{Typisch Typing ... Stufe 1}
