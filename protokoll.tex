@@ -424,7 +424,7 @@
     \begin{lstlisting} [numbers=none]
     ssh -L 9000:10.10.10.201:80 eXXXXXXXX@tese.esse-teaching.at -p 12345
         \end{lstlisting}
-    Dabei wird \textbf{xxxxxxxx} wird durch die eigenen Matrikelnummer ersetzt. Nachdem der Befehl ausgeführt wurde, öffnet man einen Webbrowser und gibt in die Addressleiste folgende URL ein: 
+    Dabei wird \textbf{XXXXXXXX} wird durch die eigenen Matrikelnummer ersetzt. Nachdem der Befehl ausgeführt wurde, öffnet man einen Webbrowser und gibt in die Addressleiste folgende URL ein: 
     \begin{lstlisting} [numbers=none]
     localhost:9000/team44/app.apk
     \end{lstlisting}
@@ -454,7 +454,10 @@
     .
     .
     \end{lstlisting}
-    Man kann imCode lesen, dass das ein zufälliges Passwort aus dem File \textbf{passwords.txt} durch Berechnungen geholt wird. So habe ich in diesem Fall ein Python-Script geschrieben, welches alle Passwörter durchprobiert (AND(roid)ERSBruteforce.py siehe Anhang).
+    Man kann im Code lesen, dass das ein zufälliges Passwort aus dem File \textbf{passwords.txt} durch Berechnungen geholt wird. So habe ich in diesem Fall ein Python-Script geschrieben, welches alle Passwörter durchprobiert (AND(roid)ERSBruteforce.py siehe Anhang). \newline
+    
+    \noindent\textbf{Idee:}
+    Eine alternative Möglichkeit, die Aufgabe zu lösen, bestünde darin, die Funktion \textbf{System.currentTimeMillis} zu nutzen. Diese Funktion erfasst die Zeit, zu der die App gestartet wird, und verwendet diesen Wert zur Berechnung des Passworts. Wenn es einem gelingt, diesen genauen Zeitpunkt des App-Starts zu ermitteln, könnte man das Passwort rekonstruieren.
 
 	\section{Babycam Espionage}
 
