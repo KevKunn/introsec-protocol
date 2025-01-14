@@ -195,22 +195,8 @@
 	\end{itemize}
 	Das config file dient dazu, die nötigen X509v3 Parameter zu setzen und sieht aus
 	wie folgt:
-	\begin{lstlisting}[caption=openssl.cnf,label=code:opensslConfig,style=simple]
-		[ req ]
-		default_bits           = 4096
-		default_md             = sha512
-		default_keyfile        = privkey.pem
-		distinguished_name     = req_distinguished_name
-		req_extensions         = v3_req
-
-		[ req_distinguished_name ]
-
-		[ v3_req ]
-		subjectKeyIdentifier = hash
-		basicConstraints = critical, CA:true, pathlen:0
-		keyUsage = critical, Certificate Sign, CRL Sign
-	\end{lstlisting}
-	Nach Ausführung des oben genannten Befehls, wird der CSR in der Datei csr.csr gespeichert,
+	\lstinputlisting[caption=openssl.cnf,label=code:opensslConfig,style=simple]{files/openssl.cnf}
+	Nach Ausführung des oben genannten Befehls (im Verzeichnis, in dem das config file gespeichert ist), wird eine Passphrase verlangt. Hier habe ich einfach "test" gewählt. Im Anschluss wird der CSR in der Datei csr.csr gespeichert,
 	diese wurde im Abgabetool eingereicht.
 
 	\section{Zeitreise durch das World Wide Web}

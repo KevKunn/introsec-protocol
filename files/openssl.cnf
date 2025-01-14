@@ -1,0 +1,6 @@
+[ req ]
+req_extensions = v3_req
+
+[ v3_req ]
+basicConstraints = critical, CA:true, pathlen:0
+keyUsage = critical, Certificate Sign, CRL Sign
