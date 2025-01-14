@@ -100,14 +100,100 @@
 
 	\section{Wireless Time Travel}
 
-	\subsection{Vier zukunftssichere Handschl\"age}
-	Nicht gelöst.
+\subsection{Vier zukunftssichere Handschl\"age}
+In der Aufgabe geht es darum einen WLAN-Dump zu erstellen und den Schlüssel zu finden der diesen entschlüsselt.
+Um den WLAN-Dump zu erstellen mussen wir uns zuerst mit einem Scan-Host verbinden der über die tese (als Jump-Host) erreichbar ist. Um die Verbindung her zu stellen, haben wir folgende Befehle genutzt:
 
-	\subsection{Code der Zukunft}
-	Nicht gelöst.
+\begin{lstlisting}
+ssh -p 12345 eXXXXXXXX@tese.esse-teaching.at
+ssh -p 2222 eisec_team44@10.10.10.144
+\end{lstlisting}
 
-	\subsection{Ungew\"ohnlich verschl\"usselte Botschaft}
-	Nicht gelöst.
+Der Zweite dieser Befehle hat folgende Funktion:
+Er stellt eine sichere, verschlüsselte Verbindung über Port 2222 zum Host 10.10.10.144 her und meldet sich dort unter dem Benutzernamen eisec-team44 an. Dies ist notwendig, um auf dem Scan-Host die WLAN-Dumps zu erstellen und andschießend wieder in unsere lokale Umgebung zu übertragen.
+
+
+Nun wo die Verbindung zum Scan-Host hergestellt worden ist, haben wir den IP Link geprüft um die derzeit verbundenen Netzwerk Schnittstellen und deren Namen zu erkennen. Dadurch konnten wir herausfinden, dass der Name des WLAN Interfaces scanhost-wlan0 ist, und wir auf ihm den Dump ausführen müssen. Mit dem Befehl:
+
+\begin{lstlisting}
+sudo airodump-ng scanhost-wlan0 
+\end{lstlisting}
+
+konnten wir einen passiven Scan des WLANs durchführen. In Abbildung \ref{fig:scanhost-wlan0} können wir alle verbundenen Netzwerke sehen. Von den uns angezeigten Informationen sind für uns vor allem die BSSID (MAC Adresse) und STATION (Adresse der verbundenen Geräte) wichtig, da wir mit ihnen einen Deauthentication Angriff starten können.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{imgs/Wireless Time Travel/scanhost-wlan0.png}
+\caption{scanhost-wlan0}
+\label{fig:scanhost-wlan0}
+\end{figure}
+
+Als nächstes ging es darum einen Handshack zu erfassen wofür wir als erstes die Packete jedes seperaten Channel abfangen mussten. Dies konnten wir mit folgendem Befehl erreichen:
+
+\begin{lstlisting}
+sudo airodump-ng --output-format pcap scanhost-wlan0 -c Channel
+\end{lstlisting}
+
+Anschließend wurde folgender Befehl ausgeführt, um einen Client vom Access Point zu trennen, und die im Dump enthaltenen EAPOL-Packete zu erhalten.
+
+\begin{lstlisting}
+sudo aireplay-ng -0 2 -a BSSID -c STATION scanhost-wlan0
+\end{lstlisting}
+
+Im nächsten Schritt müssen wir zum Scan-Host Tunneln um die zuvor erstellte .cap Datei zu erhalten und anschließend auf unser lokales Gerät zu kopieren. Dies konnten wir mit den folgenden Befehlen erreichen:
+
+\begin{lstlisting}
+ssh -L 2222:10.10.10.144:2222 eXXXXXXXX@tese.esse-teaching.at -p 12345
+scp -P 2222 eisec_team44@localhost:/home/eisec_team44/dumpfile_ ~/Documents
+\end{lstlisting}
+
+Nun wo sich der WLAN-Dump auf dem lokalen Gerät befindet, können wir einen Brute Force Angriff auf das File ausführen womit wir versuchen die Verschlüsslung des Netzwerks zu knacken. Dazu haben wir eine Liste an bekannten Passwörtern verwendet und folgenden Befehl ausgefüht:
+
+\begin{lstlisting}
+aircrack-ng -w /path/to/rockyou.txt dumpfile.cap
+\end{lstlisting}
+
+Nach der Ausführung des Angriffs haben wir den korrekten Schlüssel erhalten. Dies ist in Abbildung \ref{fig:schluesselGefunden} zu sehen.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{imgs/Wireless Time Travel/schluesselGefunden.png}
+\caption{Gefundener Schlüssel}
+\label{fig:schluesselGefunden}
+\end{figure}
+
+ 
+\subsection{Code der Zukunft}
+In dieser Aufgabe geht es darum den WLAN-Dump, der bereits in Aufgabe Vier zukunftssichere Handschläge erstellt wurde, zu untersuchen und einen Code zu finden. Dafür öffneten wir zuerst die .cap Datei in Wireshark, um sie analysieren zu können. Da wir aus der Angabe schließen können, dass es sich um ein Gespräch handelt, in dem der Code erwähnt wird, verwendeten wir Wiresharks Telephonie Funktion.
+
+Die Telephonie Funktion dient dazu Sprach- und Videoverbindungen (VoIP) sowie klassische Telefonie-Protokolle zu analysieren. In unserem Fall untersuchten wir den RTP Stream, wo wir 4 Packete gefunden haben. Nach dem Abspielen der Nachrichten hatten wir den Code.
+
+\begin{figure}
+\centering
+\includegraphics[width=1\textwidth]{imgs/Wireless Time Travel/Telephonie.png}
+\caption{Telephonie Nachrichten}
+\label{Telephonie}
+\end{figure}
+
+
+
+\subsection{Ungew\"ohnlich verschl\"usselte Botschaft}
+
+Ähnlich wie bei Aufgabe Code der Zukunft, geht es in Ungewöhnlich verschlüsselte Botschaft darum den erstellten WLAN-Dump zu analysieren. Dieses mal suchen wir allerdings nach einer Email die einen Gegenstand erwähnt. 
+
+Dafür öffnen wir wie zuvor auch den Dump in Wireshark und verwenden den Anzeigefilter um nach smtp zu filtern. Wir können nun mehrere sich wiederholende Packete sehen, wovon zwei mit MAIL FROM und RCPT TO gekennzeichnet sind. Wählen wir nun die RCPT TO Mail aus und verwenden die TCP Folgen Funktion, können wir den Inhalt der Mail sehen. Der darin enthaltene Text wurde mit einem base24 decoder dekodiert und ergibt folgende Nachricht, in der sich der gesuchte gegenstand versteckt.   
+
+\fbox{\parbox{\textwidth}{
+Siu dich Arnold,
+
+ich hab was Seltsames gefunden - einen alten Gegenstand, der auf den ersten Blick unscheinbar wirkt, aber irgendwas ist daran anders. Als ich ihn genauer untersucht habe, hatte ich plötzlich das Gefühl, dass die Zeit stehen geblieben ist. Kein Witz, es war, als ob alles um mich herum für einen Moment eingefroren wäre. Ich hab noch nicht herausgefunden, wie oder warum, aber ich glaube, dieses Ding kann mehr, als man denkt. Wenn ich raten müsste, dann schaut es aus wie ein WQUU1-Zeitreisekapselmodul. Vielleicht hat es was mit Energie, Frequenzen oder irgendwas, das wir noch nicht verstehen, zu tun.
+
+Ich bringe es dir morgen vorbei. Du musst das selbst sehen, um es zu glauben.
+
+T- Astralische Schwingungen,
+Donald
+}
+}
 
 	\subsection{Geheimnisvoller Zugang: superboss}
 	Nicht gelöst.
